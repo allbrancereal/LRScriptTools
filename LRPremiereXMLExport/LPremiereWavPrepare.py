@@ -95,7 +95,7 @@ def main():
     # Create a list of dictionaries for each subtitle
     subtitles = []
     cumulative_duration_seconds = 0
-    for i, value in enumerate(data.values(), start=1):
+    for i, (key, value) in enumerate(sorted(data.items()), start=1):
         text = value[0].replace('\n', ' ')
         num_words = len(text.split())
         duration_seconds = num_words * duration_per_word
@@ -106,6 +106,7 @@ def main():
             'duration': duration_seconds,
         })
         cumulative_duration_seconds += duration_seconds
+
 
     # Create .srt and .wav files based on the subtitles list
     cumulative_duration_seconds = 0
