@@ -10,6 +10,7 @@ from scipy.io import wavfile as sci_wavfile
 import csv
 import argparse
 
+import re
 sample_rate = 48000  # sample rate in Hz
 clip_length_seconds = 5  # length of each clip in seconds
 clip_length_frames = clip_length_seconds * sample_rate  # length of each clip in frames
@@ -63,6 +64,13 @@ def generate_alternative_markers(subtitles, output_file):
                 subtitle["text"]
             ])
 
+def sanitize_text(text):
+    # Replace any character that is not a-z, A-Z, 0-9, space, !, ., -, or : with a dash (-)
+    sanitized_text = re.sub(r'[^a-zA-Z0-9 !.:-]', '-', text)
+    # Remove any leading symbols other than space
+    sanitized_text = re.sub(r'^[^a-zA-Z0-9 ]+', '', sanitized_text)
+    return sanitized_text
+
 def main():
     parser = argparse.ArgumentParser(description='Prepare dummy audio files and subtitle files for use in Adobe Premiere.')
     parser.add_argument('-file', metavar='file', type=str, help='the path to the JSON file')
@@ -111,6 +119,7 @@ def main():
     # Create .srt and .wav files based on the subtitles list
     cumulative_duration_seconds = 0
     for subtitle in subtitles:
+        sanitized_text = sanitize_text(subtitle['text'])
         wav_file_path = os.path.join(dummy_files_folder, f"{filename}_dummy{subtitle['id']}.wav")
         srt_file_path = os.path.join(subtitles_folder, f"{filename}_dummy{subtitle['id']}.srt")
         if not os.path.exists(wav_file_path):
@@ -119,7 +128,8 @@ def main():
             frames = wav_file.getnframes()
             rate = wav_file.getframerate()
             duration_seconds = frames / float(rate)
-        create_srt_from_json(srt_file_path, subtitle['text'], cumulative_duration_seconds, duration_seconds)
+        create_srt_from_json(srt_file_path, sanitized_text, cumulative_duration_seconds, duration_seconds)
+
         # Do not add the duration to the cumulative duration
         # cumulative_duration_seconds += duration_seconds
 
