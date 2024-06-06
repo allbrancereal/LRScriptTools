@@ -16,6 +16,8 @@ def generate_html(sentences, colors):
     for sentence in sentences:
         sentence = sentence.strip()
         if sentence:  # Ignore empty sentences
+            # Escape any special HTML characters in the sentence
+            sentence = html.escape(sentence)
             color = colors[color_index]
             html += f'<p class="c6" style="color: {color}">{sentence}.</p>'
             last_color = color
