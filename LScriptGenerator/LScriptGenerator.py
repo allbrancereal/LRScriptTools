@@ -7,7 +7,8 @@ from PyQt5.QtWidgets import QLabel, QSizePolicy
 from bs4 import BeautifulSoup
 import cssutils
 import sys 
-
+import re
+import re
 def html_to_json(html):
     print("Converting HTML to JSON...")
     soup = BeautifulSoup(html, 'html.parser')
@@ -21,8 +22,9 @@ def html_to_json(html):
             # Parse inline style
             style = p.get('style', '')
             color = None
-            if 'color' in style:
-                color = style.split('color: ')[1].split(';')[0].strip()
+            match = re.search(r'color:\s*([^;]+)', style)
+            if match:
+                color = match.group(1).strip()
             # Remove escape characters
             text = p.text.encode('ascii', 'ignore').decode('unicode_escape')
             # Create a new entry for each p text
