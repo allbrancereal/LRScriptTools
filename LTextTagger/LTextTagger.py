@@ -3,13 +3,14 @@ import os
 import tkinter as tk
 from tkinter import filedialog
 import argparse
+import html
 
 def split_into_sentences(text):
     sentence_endings = r"[.!?]"
     return re.split(sentence_endings, text)
 
 def generate_html(sentences, colors):
-    html = '''<html><head><meta content="text/html; charset=UTF-8" http-equiv="content-type"><style type="text/css">body { font-family: Arial; }</style></head><body class="c5 doc-content">'''
+    html_content = '''<html><head><meta content="text/html; charset=UTF-8" http-equiv="content-type"><style type="text/css">body { font-family: Arial; }</style></head><body class="c5 doc-content">'''
     color_index = 0
     last_color = ""
 
@@ -19,15 +20,15 @@ def generate_html(sentences, colors):
             # Escape any special HTML characters in the sentence
             sentence = html.escape(sentence)
             color = colors[color_index]
-            html += f'<p class="c6" style="color: {color}">{sentence}.</p>'
+            html_content += f'<p class="c6" style="color: {color}">{sentence}.</p>'
             last_color = color
             color_index = (color_index + 1) % len(colors)
             # Ensure the same color is not used twice in a row
             if colors[color_index] == last_color:
                 color_index = (color_index + 1) % len(colors)
 
-    html += "</body></html>"
-    return html
+    html_content += "</body></html>"
+    return html_content
 
 
 def main():
