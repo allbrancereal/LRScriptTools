@@ -11,6 +11,8 @@ import csv
 import argparse
 
 import re
+from concurrent.futures import ThreadPoolExecutor
+
 sample_rate = 48000  # sample rate in Hz
 clip_length_seconds = 5  # length of each clip in seconds
 clip_length_frames = clip_length_seconds * sample_rate  # length of each clip in frames
@@ -78,12 +80,11 @@ def main():
    
     args = parser.parse_args()
     
-    # If a time per word was provided as a command-line argument, use it. Otherwise, use the default value.
     if args.time_per_word is not None:
         duration_per_word = args.time_per_word
     else:
         duration_per_word = 0.6  # default value
-    # If a file path was provided as a command-line argument, use it. Otherwise, open a file dialog.
+
     if args.file:
         json_file_path = args.file
     else:
@@ -100,25 +101,10 @@ def main():
     cumulative_duration_frames = 0  # cumulative duration of all previous clips in frames
     subtitles_folder = os.path.join(dummy_files_folder, 'subtitles')
     os.makedirs(subtitles_folder, exist_ok=True)  # create 'subtitles' subfolder if it doesn't exist
-    # Create a list of dictionaries for each subtitle
-    subtitles = []
-    cumulative_duration_seconds = 0
-    for i, (key, value) in enumerate(sorted(data.items()), start=1):
-        text = value[0].replace('\n', ' ')
-        num_words = len(text.split())
-        duration_seconds = num_words * duration_per_word
-        subtitles.append({
-            'id': i,
-            'text': text,
-            'start_time': cumulative_duration_seconds,
-            'duration': duration_seconds,
-        })
-        cumulative_duration_seconds += duration_seconds
 
-
-    # Create .srt and .wav files based on the subtitles list
     cumulative_duration_seconds = 0
-    for subtitle in subtitles:
+    
+    def process_subtitle(subtitle):
         sanitized_text = sanitize_text(subtitle['text'])
         wav_file_path = os.path.join(dummy_files_folder, f"{filename}_dummy{subtitle['id']}.wav")
         srt_file_path = os.path.join(subtitles_folder, f"{filename}_dummy{subtitle['id']}.srt")
@@ -128,15 +114,39 @@ def main():
             frames = wav_file.getnframes()
             rate = wav_file.getframerate()
             duration_seconds = frames / float(rate)
-        create_srt_from_json(srt_file_path, sanitized_text, cumulative_duration_seconds, duration_seconds)
+        create_srt_from_json(srt_file_path, sanitized_text, subtitle['start_time'], duration_seconds)
 
-        # Do not add the duration to the cumulative duration
-        # cumulative_duration_seconds += duration_seconds
+    subtitles = []
+    cumulative_duration_seconds = 0
+    sorted_data = sorted(data.items())
+    data_length = len(sorted_data)
+    i = 0
+    while i < data_length:
+        key, value = sorted_data[i]
+        print(value)
+        if isinstance(value, list) and len(value) > 0 and isinstance(value[0], str):
+            text = value[0].replace('\n', ' ')
+        else:
+            print(f"Unexpected value at index {i}: {value}")
+            text = ""
+        num_words = len(text.split())
+        duration_seconds = num_words * duration_per_word
+        subtitles.append({
+            'id': i + 1,
+            'text': text,
+            'start_time': cumulative_duration_seconds,
+            'duration': duration_seconds,
+        })
+        cumulative_duration_seconds += duration_seconds
+        i += 1
 
-    # Extract filename from json_file_path
+
+    # Create .srt and .wav files based on the subtitles list
+    with ThreadPoolExecutor() as executor:
+        executor.map(process_subtitle, subtitles)
+
     filename, _ = os.path.splitext(os.path.basename(json_file_path))
 
-    # Generate markers CSV file
     markers_filename = f"{filename}_markers.csv"
     markers_audio_filename = f"{filename}_markers_audio.csv"
 
@@ -144,6 +154,8 @@ def main():
     generate_alternative_markers(subtitles, os.path.join(os.path.dirname(json_file_path), markers_audio_filename))
 
     os.startfile(os.path.dirname(json_file_path))
+        # Do not add the duration to the cumulative duration
+        # cumulative_duration_seconds += duration_seconds
 
 if __name__ == "__main__":
     main()
