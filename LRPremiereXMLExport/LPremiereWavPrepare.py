@@ -36,10 +36,10 @@ def create_dummy_audio_file(wav_file_path, duration_seconds):
     print(f"Created or overwrote {wav_file_path}")
 
 def create_srt_from_json(srt_file_path, text, start_time_seconds, duration_seconds):
-    start_time_formatted = format_time(start_time_seconds)
-    end_time_formatted = format_time(start_time_seconds + duration_seconds)
+    start_time_formatted = format_time(0)
+    duration_time_formatted = format_time(duration_seconds)
     with open(srt_file_path, 'w') as f:
-        f.write(f"1\n{start_time_formatted} --> {end_time_formatted}\n{text}\n\n")
+        f.write(f"1\n{start_time_formatted} --> {duration_time_formatted}\n{text}\n\n")
     print(f"Created or overwrote {srt_file_path}")
 
 def generate_markers(subtitles, output_file):
